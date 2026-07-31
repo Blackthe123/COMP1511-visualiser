@@ -1,77 +1,104 @@
-# Memstack — a COMP1511 memory visualiser
+# COMP1511 Linked List Visualiser
 
-A click-and-drag tool for building up a picture of the C stack and heap by
-hand: declare variables, malloc blocks, wire up pointers, push and pop
-stack frames, and watch it all laid out with hoverable, colour-coded
-memory cells.
+An interactive, step-by-step visualiser for singly linked lists in C built to help COMP1511 students understand how pointer manipulation, memory allocation, and traversal actually work at a low level.
 
-## Running it locally
+**Live demo:** https://blackthe123.github.io/COMP1511-visualiser/
+
+---
+
+## Features
+
+### Interactive Work Area
+- **Draggable nodes** — grab any node and reposition it freely on the canvas. All pointer arrows update in real time as you drag.
+- **Live pointer arrows** — SVG arrows connect `node->next` to its target's memory address header. Tail nodes show an explicit `NULL` block.
+- **Reorder button** — instantly snaps the list into a clean left-to-right linear layout, following the `next` chain from `head`.
+
+### Step-by-Step C Code Execution
+Each operation generates a sequence of frames that walk through the actual C code line by line:
+- **Step Prev / Step Next** — move one line at a time
+- **Auto Play** — automatically advances every second
+- **Skip to End** — jump straight to the final state
+- The **currently executing line is highlighted** in the code panel, and all active pointer variables (`curr`, `prev`, `temp`, `new_node`, etc.) are highlighted in **both** the work area and the heap.
+
+### Supported Operations
+| Operation | Description |
+|---|---|
+| `insert_at_index(head, value, index)` | Insert a new node at any position (0 = head) |
+| `delete_node(head, value)` | Delete the first node matching a given value |
+| `reverse_list(head)` | Reverse the list in place (3-pointer technique) |
+| `find_node(head, value)` | Traverse the list searching for a value |
+| `free_list(head)` | Free every node one by one and reset `head` to `NULL` |
+
+### Heap Memory View
+A resizable panel at the bottom right shows each node as it exists in simulated heap memory — with its **memory address** (e.g. `0x104`), **`value`**, and **`next` pointer**. Nodes currently being operated on are highlighted to match the work area.
+
+### Code Browser
+Five tabs (`insert_at_index`, `delete_node`, `free_list`, `reverse_list`, `find_node`) let you read any function's code freely at any time. While an operation is actively being stepped through, the viewer locks to that function and tracks the active line. Once complete, all tabs are browsable again.
+
+### Resizable Panels
+- Drag the **vertical splitter** to resize the code/controls panel vs. the canvas.
+- Drag the **horizontal splitter** above the heap to resize the heap panel height.
+
+---
+
+## Node Structure
+
+```c
+struct node {
+    int value;
+    struct node *next;
+};
+```
+
+---
+
+## Running Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Opens on http://localhost:5173 by default.
+Opens at http://localhost:5173 by default.
 
-## Building for deployment
+## Building
 
 ```bash
 npm run build
 ```
 
-Produces a static site in `dist/` — drag that folder onto Netlify/Vercel,
-or push it to a `gh-pages` branch for GitHub Pages, or serve it from
-literally any static host. No backend, no server, nothing to configure.
+Outputs a static site to `dist/`. Deployed automatically to GitHub Pages via the Actions workflow on every push to `main`.
 
-## How it's put together
+---
+
+## Project Structure
 
 ```
 src/
-  model/types.ts        — the data model: MemCell, StackFrame, MemoryState
-  state/reducer.ts       — every action that can happen to memory
-                            (declare, malloc, free, connect pointers,
-                            push/pop frames, "upgrade RAM")
-  state/MemoryContext.tsx — React context wiring the reducer to the UI,
-                            plus a registry of each cell's DOM node
-                            (used to draw pointer wires)
+  state/
+    types.ts          — LLNode, Frame, Variables types + all C code constants
+    engine.ts         — frame generators for each operation (insert, delete,
+                        reverse, find, free) — pure functions, no React
   components/
-    Toolbox.tsx          — the palette of actions (buttons + small forms)
-    ScenarioBar.tsx       — guided walkthroughs, built from the SAME
-                            reducer actions as the free-form sandbox
-    StackPanel.tsx / HeapPanel.tsx — the two main panels
-    MemoryCell.tsx        — a single hoverable, colour-coded memory chip
-    PointerArrows.tsx     — SVG overlay that draws the glowing wires
-                            between pointers/nodes and what they point to
-    InfoDrawer.tsx        — the "stack vs heap" explainer panel
-    ActionLog.tsx         — running history, phrased as C statements
-  scenarios/scenarios.ts — guided scenario scripts (name-based, so they
-                            don't need to know runtime-generated ids)
+    WorkArea.tsx      — draggable node canvas with live SVG pointer arrows
+    HeapArea.tsx      — static heap memory block view with addresses
+    CodeViewer.tsx    — syntax-highlighted C code with active line tracking
+  App.tsx             — layout, resizers, state machine, operation dispatch
+  index.css           — design system (dark mode, glassmorphism nodes,
+                        animations, CSS variables)
 ```
 
-### Extending it
+### Adding a New Operation
 
-- **New palette action**: add a case to the `Action` union and `reducer`
-  in `state/reducer.ts`, then wire a button + small form into
-  `Toolbox.tsx`.
-- **New guided scenario**: add an entry to `scenarios/scenarios.ts`. Steps
-  are either a raw reducer `action`, or one of `connectPointer` /
-  `connectNodeNext` / `freePointerName`, which resolve by variable name
-  against whatever's currently on screen.
-- **A future "type real C code" mode**: the reducer already models
-  everything by explicit action (declare, malloc, connect, free, push/pop
-  frame) — a parser for a small C subset would just need to emit the same
-  actions instead of a human clicking buttons. The visual layer wouldn't
-  need to change.
+1. Add a `CODE_*` constant string in `src/state/types.ts`
+2. Write a `generate*Frames(nodes, head, ...)` function in `src/state/engine.ts` — push a `Frame` for each meaningful step in the C code
+3. Wire up a button + optional form in `App.tsx`
+4. Add a tab in `CodeViewer.tsx`
 
-## Known simplifications (intentional, for teaching clarity)
+---
 
-- Addresses are fake, sequential, and reset every session — real
-  addresses are neither predictable nor meaningful to reason about, and
-  showing tidy incrementing hex values keeps attention on relative
-  layout (stack down, heap up) rather than literal numbers.
-- Struct support is limited to a single linked-list node shape
-  (`{ data, next }`) since that's what COMP1511 needs; general structs
-  aren't modelled.
-- `malloc` failures are simulated by capping the heap size (see the RAM
-  upgrade button) rather than modelling real system memory limits.
+## Design Notes
+
+- **Memory addresses are simulated** — sequential hex values like `0x104`, `0x108`, etc. Real addresses are non-deterministic and distract from the concept.
+- **Uninitialized memory** — when `malloc` is called, the new node shows `?` for both `value` and `next` until those fields are explicitly assigned, mirroring real C behaviour.
+- **No external libraries** — pointer arrows are plain SVG, dragging uses native Pointer Events, layout uses CSS Flexbox. React + TypeScript + Vite only.
