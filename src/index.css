@@ -1,0 +1,327 @@
+:root {
+  --bg-primary: #0f172a; /* Tailwind slate-900 */
+  --bg-secondary: #1e293b; /* Tailwind slate-800 */
+  --bg-glass: rgba(30, 41, 59, 0.7);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.5);
+  --node-bg: #334155;
+  --node-border: #475569;
+  --node-highlight: #ec4899;
+  --heap-bg: #0b1120;
+  
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+}
+
+.resizer {
+  width: 5px;
+  background-color: var(--node-border);
+  cursor: col-resize;
+  transition: background-color 0.2s;
+  z-index: 50;
+}
+
+.resizer:hover, .resizer:active {
+  background-color: var(--accent);
+}
+
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.work-area {
+  flex: 2;
+  position: relative;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+  overflow: hidden;
+}
+
+.heap-resizer {
+  height: 5px;
+  background-color: var(--node-border);
+  cursor: row-resize;
+  transition: background-color 0.2s;
+  z-index: 50;
+}
+
+.heap-resizer:hover, .heap-resizer:active {
+  background-color: var(--accent);
+}
+
+.heap-area {
+  border-top: 1px solid var(--node-border);
+  background-color: var(--heap-bg);
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-content: flex-start;
+}
+
+.code-viewer-header {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--node-bg);
+  border-bottom: 1px solid var(--node-border);
+}
+
+.code-tab {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.code-tab.active {
+  color: var(--accent);
+}
+
+.code-viewer {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.code-line {
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  display: flex;
+  gap: 1rem;
+}
+
+.code-line.active {
+  background-color: var(--accent);
+  color: white;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.line-number {
+  color: var(--text-secondary);
+  user-select: none;
+  min-width: 2rem;
+  text-align: right;
+}
+
+.controls {
+  padding: 1rem;
+  border-bottom: 1px solid var(--node-border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.controls-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+button {
+  background: var(--node-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--node-border);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.controls-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--bg-primary);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--node-border);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+input[type="number"] {
+  background: var(--bg-primary);
+  border: 1px solid var(--node-border);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 6px;
+  width: 80px;
+}
+
+/* Node Styles */
+.node {
+  position: absolute;
+  width: 90px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--node-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.node:active {
+  cursor: grabbing;
+}
+
+.node.highlighted {
+  border-color: var(--node-highlight);
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+}
+
+.node-header {
+  background: var(--node-bg);
+  padding: 0.3rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--node-border);
+}
+
+.node-body {
+  display: flex;
+}
+
+.node-value, .node-next {
+  flex: 1;
+  padding: 0.5rem;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.node-next {
+  border-left: 1px solid var(--node-border);
+  position: relative;
+}
+
+/* SVG Arrows */
+.arrows-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arrow-path {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  transition: d 0.1s linear, stroke 0.2s;
+}
+
+.arrow-path.highlighted {
+  stroke: var(--node-highlight);
+  stroke-width: 3;
+}
+
+/* Heap Node */
+.heap-node {
+  width: 150px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--node-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.heap-node.highlighted {
+  border-color: var(--node-highlight);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+}
+
+.heap-header {
+  background: var(--node-bg);
+  padding: 0.2rem 0.5rem;
+  border-bottom: 1px solid var(--node-border);
+  color: var(--text-secondary);
+}
+
+.heap-row {
+  display: flex;
+  padding: 0.2rem 0.5rem;
+  justify-content: space-between;
+}
+
+.heap-label {
+  color: var(--text-secondary);
+}
+
+.vars-panel {
+  padding: 1rem;
+  border-bottom: 1px solid var(--node-border);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.var-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+}
